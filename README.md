@@ -9,7 +9,6 @@
 -Se Ha Arreglado vehicles-shop
 -Se Ha Arreglado Admin
 -Se Ha Arreglado MySQL Data Base v.123
--Se Ha Añadido un Comando llamando /lua lo cual te abrira un gui con todo lo necesario para aprender a scriptear
 -Añadido y Correjido los Chat's ya que daban errores
 -Añadido el Comando /limpiarchat
 -Se han quitado los runcode que hacia que podias setearte dinero si no eras admin o mod
