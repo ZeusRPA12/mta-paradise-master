@@ -1,0 +1,607 @@
+<!--
+Copyright (c) 2010 MTA: Paradise
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+-->
+<meta>
+	<info author="mabako" name="Player Manager" version="1.0"/>
+	
+	<script src="main.lua"/>
+	<script src="main_c.lua" type="client"/>
+	
+	<!-- Returns all groups the player is in, starting with the one with the highest priority.
+		parameters:
+			(player) the player whom to return the groups of.
+		returns:
+			(table) all groups the player is in, an empty table if none.
+	-->
+	<export function="getGroups"/>
+	
+	<!-- Returns the ID of the character the player is currently logged in as.
+		parameters:
+			(player) the player to get the character's ID of.
+		returns:
+			(number) the character ID if successful, (bool) false otherwise.
+	-->
+	<export function="getCharacterID"/>
+	
+	<!-- Returns the name that's assigned to a character ID.
+		parameters:
+			(number) Character ID you want to get the name from
+		returns:
+			(string) Character name if successful, (bool) false otherwise.
+	-->
+	<export function="getCharacterName"/>
+	
+	<!-- (server) Returns true if the player is logged in.
+		parameters:
+			(player) the player to check.
+		returns:
+			(bool) true if the player is logged in, false otherwise.
+	-->
+	<export function="isLoggedIn"/>
+	
+	<!-- (client) Returns true if the local player is logged in.
+		returns:
+			(bool) true if the local player is logged in, false otherwise.
+	-->
+	<export function="isLoggedIn" type="client"/>
+	
+	<!-- Returns true if the player is logged in.
+		parameters:
+			(player) the player to check.
+		returns:
+			(bool) true if he's logged in into any user, (bool) false otherwise.
+	-->
+	<export function="getUserID"/>
+	
+	<!-- Returns true if the player is logged in.
+		parameters:
+			(player) the player to check.
+		returns:
+			(bool) true if he's logged in into any user, (bool) false otherwise.
+	-->
+	<export function="getUserName"/>
+	
+	<!-- -- -->
+	
+	<!-- sets the money value for a player.
+		parameters:
+			(player) the player to set the money for.
+			(number) the amount of money the player now should have.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="setMoney"/>
+	
+	<!-- gives the player money.
+		parameters:
+			(player) the player to give the money to.
+			(number) the amount of money you want to give to the player.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="giveMoney"/>
+	
+	<!-- takes money from a player.
+		parameters:
+			(player) the player to take the money from.
+			(number) the amount of money to take from the player.
+		returns:
+			(bool) true if successful, false otherwise (e.g. if the player does not have enough money).
+	-->
+	<export function="takeMoney"/>
+	
+	<!-- retrieves the amount of money a player has
+		parameters:
+			(player) the player to set the money for.
+		returns:
+			(number) the amount of money a player has, 0 if he/she isn't logged in.
+	-->
+	<export function="getMoney"/>
+	
+	<!-- -- -->
+	
+	<!-- Creates a new character.
+		parameters:
+			(player) the player who the new character will belong to.
+			(string) name - the name of the character.
+			(number) skin - the character's skin. See http://wiki.multitheftauto.com/wiki/All_Skins_Page for a list of skins.
+		returns:
+			(bool) true if the character was created, false otherwise (such as: a character with that name already exists)
+	-->
+	<export function="createCharacter"/>
+	
+	<!-- sends the player an updated character list
+		parameters:
+			(player) player of whom to reload the char list
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="updateCharacters"/>
+	
+	<!-- (client) Function that is called whenever you select a char from the chararcter selection.
+		parameters:
+			(number) character id - the char ID you want to spawn as.
+			(string) name - the name of the character, only used to check if it's not the one you're currently playing as.
+	-->
+	<export function="selectCharacter" type="client"/>
+	
+	<!-- Updates the text and color of a player's nametag.
+		parameters:
+			(player) player to update the nametag of.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="updateNametag"/>
+	
+	<!-- Returns the player's current job.
+		parameters:
+			(player) player to check.
+		returns:
+			(string) job (e.g. 'taxi') or (nil) if none.
+	-->
+	<export function="getJob"/>
+	
+	<!-- Sets a player's job.
+		parameters:
+			(player) player to set the job of.
+			(string) job (e.g. 'taxi') or (nil) if none.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="setJob"/>
+	
+	<!-- Gets a user option (globally for that user - not per character).
+		parameters:
+			(player) player to get the option from.
+			(string) name of the option.
+		returns:
+			the option if successful, (nil) otherwise.
+	-->
+	<export function="getOption"/>
+	
+	<!-- Sets a user option (globally for that user - not per character).
+		parameters:
+			(player) player to set the option for.
+			(string) name of the option.
+			(string/number/bool/nil) value of the option.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="setOption"/>
+	
+	<script src="registration.lua"/>
+	
+	<script src="ids.lua"/>
+	
+	<!-- resolves an ID/name/name part into a player element
+		parameters:
+			(player) the player who wants to resolve the ID. It'll show "Not logged in" etc. messages to this player. (nil) to show no messages.
+			(number) player id or (string) full player name or (string) part of player name
+			(bool) ignore login state - if this is set to true, even a not logged in player might be returned (/kick uses this, for example), if set to false an error message will show if the player is not logged in. Default: false.
+		returns:
+			(player) The player matching your search if exactly one player is found, (nil) otherwise.
+	-->
+	<export function="getFromName"/>
+	
+	<!-- retrieves the ID of a player within the range from 1 to (max. number of slots).
+		parameters:
+			(player) player id of whom to get the ID.
+		returns:
+			(number) the ID of the player, (nil) if no ID is assigned.
+	-->
+	<export function="getID"/>
+	
+	<include resource="sql"/>
+	<include resource="gui"/>
+	
+	<!-- Skin Images -->
+	<file src="images/skins/-1.png"/>
+	<file src="images/skins/-2.png"/>
+	<file src="images/skins/0.png"/>
+	<file src="images/skins/7.png"/>
+	<file src="images/skins/9.png"/>
+	<file src="images/skins/10.png"/>
+	<file src="images/skins/11.png"/>
+	<file src="images/skins/12.png"/>
+	<file src="images/skins/13.png"/>
+	<file src="images/skins/14.png"/>
+	<file src="images/skins/15.png"/>
+	<file src="images/skins/16.png"/>
+	<file src="images/skins/17.png"/>
+	<file src="images/skins/18.png"/>
+	<file src="images/skins/19.png"/>
+	<file src="images/skins/20.png"/>
+	<file src="images/skins/21.png"/>
+	<file src="images/skins/22.png"/>
+	<file src="images/skins/23.png"/>
+	<file src="images/skins/24.png"/>
+	<file src="images/skins/25.png"/>
+	<file src="images/skins/26.png"/>
+	<file src="images/skins/27.png"/>
+	<file src="images/skins/28.png"/>
+	<file src="images/skins/29.png"/>
+	<file src="images/skins/30.png"/>
+	<file src="images/skins/31.png"/>
+	<file src="images/skins/32.png"/>
+	<file src="images/skins/33.png"/>
+	<file src="images/skins/34.png"/>
+	<file src="images/skins/35.png"/>
+	<file src="images/skins/36.png"/>
+	<file src="images/skins/37.png"/>
+	<file src="images/skins/38.png"/>
+	<file src="images/skins/39.png"/>
+	<file src="images/skins/40.png"/>
+	<file src="images/skins/41.png"/>
+	<file src="images/skins/43.png"/>
+	<file src="images/skins/44.png"/>
+	<file src="images/skins/45.png"/>
+	<file src="images/skins/46.png"/>
+	<file src="images/skins/47.png"/>
+	<file src="images/skins/48.png"/>
+	<file src="images/skins/49.png"/>
+	<file src="images/skins/50.png"/>
+	<file src="images/skins/51.png"/>
+	<file src="images/skins/52.png"/>
+	<file src="images/skins/53.png"/>
+	<file src="images/skins/54.png"/>
+	<file src="images/skins/55.png"/>
+	<file src="images/skins/56.png"/>
+	<file src="images/skins/57.png"/>
+	<file src="images/skins/58.png"/>
+	<file src="images/skins/59.png"/>
+	<file src="images/skins/60.png"/>
+	<file src="images/skins/61.png"/>
+	<file src="images/skins/62.png"/>
+	<file src="images/skins/63.png"/>
+	<file src="images/skins/64.png"/>
+	<file src="images/skins/66.png"/>
+	<file src="images/skins/67.png"/>
+	<file src="images/skins/68.png"/>
+	<file src="images/skins/69.png"/>
+	<file src="images/skins/70.png"/>
+	<file src="images/skins/71.png"/>
+	<file src="images/skins/72.png"/>
+	<file src="images/skins/73.png"/>
+	<file src="images/skins/75.png"/>
+	<file src="images/skins/76.png"/>
+	<file src="images/skins/77.png"/>
+	<file src="images/skins/78.png"/>
+	<file src="images/skins/79.png"/>
+	<file src="images/skins/80.png"/>
+	<file src="images/skins/81.png"/>
+	<file src="images/skins/82.png"/>
+	<file src="images/skins/83.png"/>
+	<file src="images/skins/84.png"/>
+	<file src="images/skins/85.png"/>
+	<file src="images/skins/87.png"/>
+	<file src="images/skins/88.png"/>
+	<file src="images/skins/89.png"/>
+	<file src="images/skins/90.png"/>
+	<file src="images/skins/91.png"/>
+	<file src="images/skins/92.png"/>
+	<file src="images/skins/93.png"/>
+	<file src="images/skins/94.png"/>
+	<file src="images/skins/95.png"/>
+	<file src="images/skins/96.png"/>
+	<file src="images/skins/97.png"/>
+	<file src="images/skins/98.png"/>
+	<file src="images/skins/99.png"/>
+	<file src="images/skins/100.png"/>
+	<file src="images/skins/101.png"/>
+	<file src="images/skins/102.png"/>
+	<file src="images/skins/103.png"/>
+	<file src="images/skins/104.png"/>
+	<file src="images/skins/105.png"/>
+	<file src="images/skins/106.png"/>
+	<file src="images/skins/107.png"/>
+	<file src="images/skins/108.png"/>
+	<file src="images/skins/109.png"/>
+	<file src="images/skins/110.png"/>
+	<file src="images/skins/111.png"/>
+	<file src="images/skins/112.png"/>
+	<file src="images/skins/113.png"/>
+	<file src="images/skins/114.png"/>
+	<file src="images/skins/115.png"/>
+	<file src="images/skins/116.png"/>
+	<file src="images/skins/117.png"/>
+	<file src="images/skins/118.png"/>
+	<file src="images/skins/120.png"/>
+	<file src="images/skins/121.png"/>
+	<file src="images/skins/122.png"/>
+	<file src="images/skins/123.png"/>
+	<file src="images/skins/124.png"/>
+	<file src="images/skins/125.png"/>
+	<file src="images/skins/126.png"/>
+	<file src="images/skins/127.png"/>
+	<file src="images/skins/128.png"/>
+	<file src="images/skins/129.png"/>
+	<file src="images/skins/130.png"/>
+	<file src="images/skins/131.png"/>
+	<file src="images/skins/132.png"/>
+	<file src="images/skins/133.png"/>
+	<file src="images/skins/134.png"/>
+	<file src="images/skins/135.png"/>
+	<file src="images/skins/136.png"/>
+	<file src="images/skins/137.png"/>
+	<file src="images/skins/138.png"/>
+	<file src="images/skins/139.png"/>
+	<file src="images/skins/140.png"/>
+	<file src="images/skins/141.png"/>
+	<file src="images/skins/142.png"/>
+	<file src="images/skins/143.png"/>
+	<file src="images/skins/144.png"/>
+	<file src="images/skins/145.png"/>
+	<file src="images/skins/146.png"/>
+	<file src="images/skins/147.png"/>
+	<file src="images/skins/148.png"/>
+	<file src="images/skins/150.png"/>
+	<file src="images/skins/151.png"/>
+	<file src="images/skins/152.png"/>
+	<file src="images/skins/153.png"/>
+	<file src="images/skins/154.png"/>
+	<file src="images/skins/155.png"/>
+	<file src="images/skins/156.png"/>
+	<file src="images/skins/157.png"/>
+	<file src="images/skins/158.png"/>
+	<file src="images/skins/159.png"/>
+	<file src="images/skins/160.png"/>
+	<file src="images/skins/161.png"/>
+	<file src="images/skins/162.png"/>
+	<file src="images/skins/163.png"/>
+	<file src="images/skins/164.png"/>
+	<file src="images/skins/165.png"/>
+	<file src="images/skins/166.png"/>
+	<file src="images/skins/167.png"/>
+	<file src="images/skins/168.png"/>
+	<file src="images/skins/169.png"/>
+	<file src="images/skins/170.png"/>
+	<file src="images/skins/171.png"/>
+	<file src="images/skins/172.png"/>
+	<file src="images/skins/173.png"/>
+	<file src="images/skins/174.png"/>
+	<file src="images/skins/175.png"/>
+	<file src="images/skins/176.png"/>
+	<file src="images/skins/177.png"/>
+	<file src="images/skins/178.png"/>
+	<file src="images/skins/179.png"/>
+	<file src="images/skins/180.png"/>
+	<file src="images/skins/181.png"/>
+	<file src="images/skins/182.png"/>
+	<file src="images/skins/183.png"/>
+	<file src="images/skins/184.png"/>
+	<file src="images/skins/185.png"/>
+	<file src="images/skins/186.png"/>
+	<file src="images/skins/187.png"/>
+	<file src="images/skins/188.png"/>
+	<file src="images/skins/189.png"/>
+	<file src="images/skins/190.png"/>
+	<file src="images/skins/191.png"/>
+	<file src="images/skins/192.png"/>
+	<file src="images/skins/193.png"/>
+	<file src="images/skins/194.png"/>
+	<file src="images/skins/195.png"/>
+	<file src="images/skins/196.png"/>
+	<file src="images/skins/197.png"/>
+	<file src="images/skins/198.png"/>
+	<file src="images/skins/199.png"/>
+	<file src="images/skins/200.png"/>
+	<file src="images/skins/201.png"/>
+	<file src="images/skins/202.png"/>
+	<file src="images/skins/203.png"/>
+	<file src="images/skins/204.png"/>
+	<file src="images/skins/205.png"/>
+	<file src="images/skins/206.png"/>
+	<file src="images/skins/207.png"/>
+	<file src="images/skins/209.png"/>
+	<file src="images/skins/210.png"/>
+	<file src="images/skins/211.png"/>
+	<file src="images/skins/212.png"/>
+	<file src="images/skins/213.png"/>
+	<file src="images/skins/214.png"/>
+	<file src="images/skins/215.png"/>
+	<file src="images/skins/216.png"/>
+	<file src="images/skins/217.png"/>
+	<file src="images/skins/218.png"/>
+	<file src="images/skins/219.png"/>
+	<file src="images/skins/220.png"/>
+	<file src="images/skins/221.png"/>
+	<file src="images/skins/222.png"/>
+	<file src="images/skins/223.png"/>
+	<file src="images/skins/224.png"/>
+	<file src="images/skins/225.png"/>
+	<file src="images/skins/226.png"/>
+	<file src="images/skins/227.png"/>
+	<file src="images/skins/228.png"/>
+	<file src="images/skins/229.png"/>
+	<file src="images/skins/230.png"/>
+	<file src="images/skins/231.png"/>
+	<file src="images/skins/232.png"/>
+	<file src="images/skins/233.png"/>
+	<file src="images/skins/234.png"/>
+	<file src="images/skins/235.png"/>
+	<file src="images/skins/236.png"/>
+	<file src="images/skins/237.png"/>
+	<file src="images/skins/238.png"/>
+	<file src="images/skins/239.png"/>
+	<file src="images/skins/240.png"/>
+	<file src="images/skins/241.png"/>
+	<file src="images/skins/242.png"/>
+	<file src="images/skins/243.png"/>
+	<file src="images/skins/244.png"/>
+	<file src="images/skins/245.png"/>
+	<file src="images/skins/246.png"/>
+	<file src="images/skins/247.png"/>
+	<file src="images/skins/248.png"/>
+	<file src="images/skins/249.png"/>
+	<file src="images/skins/250.png"/>
+	<file src="images/skins/251.png"/>
+	<file src="images/skins/252.png"/>
+	<file src="images/skins/253.png"/>
+	<file src="images/skins/254.png"/>
+	<file src="images/skins/255.png"/>
+	<file src="images/skins/256.png"/>
+	<file src="images/skins/257.png"/>
+	<file src="images/skins/258.png"/>
+	<file src="images/skins/259.png"/>
+	<file src="images/skins/260.png"/>
+	<file src="images/skins/261.png"/>
+	<file src="images/skins/262.png"/>
+	<file src="images/skins/263.png"/>
+	<file src="images/skins/264.png"/>
+	<file src="images/skins/274.png"/>
+	<file src="images/skins/275.png"/>
+	<file src="images/skins/276.png"/>
+	<file src="images/skins/277.png"/>
+	<file src="images/skins/278.png"/>
+	<file src="images/skins/279.png"/>
+	<file src="images/skins/280.png"/>
+	<file src="images/skins/281.png"/>
+	<file src="images/skins/282.png"/>
+	<file src="images/skins/283.png"/>
+	<file src="images/skins/284.png"/>
+	<file src="images/skins/285.png"/>
+	<file src="images/skins/286.png"/>
+	<file src="images/skins/287.png"/>
+	<file src="images/skins/288.png"/>
+	
+	<script src="skins.lua"/>
+	<script src="skins.lua" type="client"/>
+	
+	<!-- Returns a table of all valid skins.
+		returns: table with skins.
+	-->
+	<export function="getSkins"/>
+	<export function="getSkins" type="client"/>
+	
+	<!-- Checks if a skin is valid.
+		parameters:
+			(number) skin ID - the skin to check.
+		returns:
+			(bool) true if the skin is valid, false otherwise.
+	-->
+	<export function="isValidSkin"/>
+	<export function="isValidSkin" type="client"/>
+	
+	<!-- Returns a table with the details of a skin.
+			(number) skin ID - the skin to check.
+		returns:
+			(table) with two fields:
+				(string) gender: male/female
+				(string) color: white/black
+	-->
+	<export function="getSkinDetails"/>
+	<export function="getSkinDetails" type="client"/>
+	
+	<script src="respawn.lua"/>
+	<script src="respawn_c.lua" type="client"/>
+	
+	<script src="afk.lua"/>
+	<script src="afk_c.lua" type="client"/>
+	
+	<script src="tutorial_c.lua" type="client"/>
+	
+	<script src="pay.lua"/>
+	
+	<script src="language_g.lua"/>
+	<script src="language_g.lua" type="client"/>
+	<script src="language.lua"/>
+	
+	<!-- Returns a { language name, shortcut } table for all languages
+		returns:
+			(table) with all languages
+	-->
+	<export function="getLanguages"/>
+	<export function="getLanguages" type="client"/>
+	
+	<!-- Returns whetever a flag is valid.
+		parameters:
+			(string) flag.
+		returns:
+			(bool) true if valid, false otherwise.
+	-->
+	<export function="isValidLanguage"/>
+	<export function="isValidLanguage" type="client"/>
+	
+	<!-- Returns the full name of a language.
+		parameters:
+			(string) flag.
+		returns:
+			(string) full name if valid, (bool) false otherwise.
+	-->
+	<export function="getLanguageName"/>
+	<export function="getLanguageName" type="client"/>
+	
+	<!-- Returns the player's current language.
+		parameters:
+			(player) the player to retrieve the language of.
+		returns:
+			(string) language's flag if any, (nil) otherwise.
+	-->
+	<export function="getCurrentLanguage"/>
+	
+	<!-- Returns the player's skill for a language.
+		parameters:
+			(player) the player to retrieve the language skill from.
+			(string) language to get the skill from.
+		returns:
+			(number) 0-1000 for any skill, (false) if he doesn't speak the language.
+	-->
+	<export function="getLanguageSkill"/>
+	
+	<!-- Increases a player's language skill.
+		parameters:
+			(player) the player to increase the language skill for.
+			(string) language to increase the skill for.
+		returns:
+			(bool) true if successful, false otherwise.
+	-->
+	<export function="increaseLanguageSkill"/>
+	
+	<!-- Learn a player a language.
+		parameters:
+			(player) the player to learn the language.
+			(string) language to learn.
+		returns:
+			(bool) true if successful, false otherwise.
+			(number) error code if failed.
+				1 - Invalid Language.
+				2 - Player does speak the language already.
+				3 - Player exceeded maximum amount of languages.
+				4 - MySQL-Error.
+	-->
+	<export function="learnLanguage"/>
+	
+	<file src="images/flags/ar.png"/>
+	<file src="images/flags/cn.png"/>
+	<file src="images/flags/de.png"/>
+	<file src="images/flags/en.png"/>
+	<file src="images/flags/es.png"/>
+	<file src="images/flags/fi.png"/>
+	<file src="images/flags/fr.png"/>
+	<file src="images/flags/gr.png"/>
+	<file src="images/flags/in.png"/>
+	<file src="images/flags/il.png"/>
+	<file src="images/flags/it.png"/>
+	<file src="images/flags/jp.png"/>
+	<file src="images/flags/kr.png"/>
+	<file src="images/flags/ma.png"/>
+	<file src="images/flags/nl.png"/>
+	<file src="images/flags/pl.png"/>
+	<file src="images/flags/pt.png"/>
+	<file src="images/flags/ru.png"/>
+	<file src="images/flags/se.png"/>
+	<file src="images/flags/vn.png"/>
+</meta>
